@@ -1,56 +1,56 @@
-# Этап сборки
+# Build stage
 FROM python:3.12-slim as builder
 
-# Установка рабочей директории
+# Set working directory
 WORKDIR /app
 
-# Установка только необходимых зависимостей для сборки
+# Install only the necessary build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     libpq-dev \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Копирование только requirements.txt
+# Copy only the requirements.txt file
 COPY requirements.txt .
 
-# Создание виртуального окружения и установка зависимостей
+# Create virtual environment and install dependencies
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Финальный этап
+# Final stage
 FROM python:3.12-slim
 
-# Установка необходимых пакетов
+# Install necessary packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Копирование только необходимых файлов из builder
+# Copy only the necessary files from the builder stage
 COPY --from=builder /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Установка рабочей директории
+# Set working directory
 WORKDIR /app
 
-# Копирование файлов приложения и тестов
+# Copy application and test files
 COPY app/ app/
 COPY tests/ tests/
 
-# Создание непривилегированного пользователя
+# Create a non-privileged user
 RUN useradd -m appuser && chown -R appuser:appuser /app
 USER appuser
 
-# Переменные окружения по умолчанию
+# Default environment variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     ENVIRONMENT=production \
     PYTHONPATH=/app
 
-# Открытие порта
+# Expose port
 EXPOSE 8000
 
-# Запуск приложения
+# Run the application
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
