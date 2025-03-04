@@ -6,14 +6,15 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
       - DB_HOST=db
       - DB_PORT=5432
-      - DB_NAME=${DB_NAME:-fastapi_db}
+      - DB_NAME=${DB_NAME:-fastapi_app}
       - ENVIRONMENT=${ENVIRONMENT:-development}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     volumes:
       - ./app:/app/app
       - ./tests:/app/tests
@@ -23,17 +24,19 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 10s
 
   db:
     image: postgres:16-alpine
     ports:
       - "5432:5432"
     environment:
-      - POSTGRES_USER=${DB_USER}
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_DB=${DB_NAME:-fastapi_db}
+      - POSTGRES_USER=${DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
+      - POSTGRES_DB=${DB_NAME:-fastapi_app}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -45,18 +48,20 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
       - DB_HOST=db
       - DB_PORT=5432
-      - DB_NAME=${DB_NAME:-fastapi_db}
+      - DB_NAME=${DB_NAME:-fastapi_app}
       - ENVIRONMENT=test
+      - PYTHONPATH=/app
     volumes:
       - ./app:/app/app
       - ./tests:/app/tests
     depends_on:
-      - db
-    command: pytest tests/ -v
+      db:
+        condition: service_healthy
+    command: sh -c "sleep 2 && pytest tests/ -v"
     restart: "no"
     deploy:
       restart_policy:
