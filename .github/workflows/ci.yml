@@ -20,12 +20,9 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        
-      - name: Install Docker Compose
-        uses: ndeloof/install-compose-action@v0.0.1
-        with:
-          version: v2.33.1
-          legacy: true
+
+      - name: Check Docker Compose version
+        run: docker compose version
 
       - name: Build application image
         run: docker compose build
@@ -36,24 +33,17 @@ jobs:
       - name: Wait for database to be ready
         run: |
           echo "Waiting for database to be ready..."
-          timeout=60
-          while [ $timeout -gt 0 ]; do
-            if docker compose exec -T db pg_isready -U postgres; then
-              echo "Database is ready!"
-              break
-            fi
-            echo "Database not ready yet. Waiting..."
+          for i in {1..30}; do
+            docker compose exec -T db pg_isready -U postgres && echo "Database is ready!" && exit 0
+            echo "Database not ready yet. Retrying in 2s..."
             sleep 2
-            timeout=$((timeout-2))
           done
-          if [ $timeout -le 0 ]; then
-            echo "Timeout waiting for database"
-            exit 1
-          fi
-      
+          echo "Timeout waiting for database"
+          exit 1
+
       - name: Run unit tests inside Docker
         run: docker compose run --rm test pytest tests/ -v --disable-warnings
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -72,9 +62,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install bandit safety flake8
-      
+
       - name: Check code formatting with flake8
-        run: flake8 app/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics || true
+        run: flake8 app/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
       
       - name: Run Bandit security scan (code vulnerabilities)
         run: bandit -r app/ -f json -o bandit-results.json || true
@@ -88,11 +78,11 @@ jobs:
             echo "requirements_exist=false" >> $GITHUB_OUTPUT
             echo "requirements.txt not found, skipping Safety scan"
           fi
-      
+
       - name: Run Safety dependency scan
         if: steps.check_requirements.outputs.requirements_exist == 'true'
-        run: safety check -r requirements.txt --json > safety-results.json || true
-      
+        run: safety scan -r requirements.txt --json > safety-results.json --no-api-key || true
+
       - name: Upload security scan results
         uses: actions/upload-artifact@v4
         with:
@@ -115,12 +105,9 @@ jobs:
       
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        
-      - name: Install Docker Compose
-        uses: ndeloof/install-compose-action@v0.0.1
-        with:
-          version: v2.23.3
-          legacy: true
+      
+      - name: Check Docker Compose version
+        run: docker compose version
       
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -134,11 +121,11 @@ jobs:
         with:
           images: maltsevvm/fastapi-app
           tags: |
-            type=ref,event=branch  # Tag with branch name
-            type=semver,pattern={{version}}  # Tag with semantic version from git tag
-            type=semver,pattern={{major}}.{{minor}}  # Tag with major.minor
-            type=sha,format=short  # Tag with short commit SHA
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' }}  # Latest tag only for main/master
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,format=short
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -149,10 +136,3 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      
-      - name: Notify on success
-        if: success()
-        run: |
-          echo "CI/CD pipeline completed successfully!"
-          echo "Image pushed to Docker Hub: maltsevvm/fastapi-app"
-          # Здесь можно добавить интеграцию с системами уведомлений (Slack, Email и т.д.)
