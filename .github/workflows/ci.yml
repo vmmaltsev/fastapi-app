@@ -20,22 +20,32 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        
+      - name: Install Docker Compose
+        run: |
+          # Устанавливаем docker-compose v2 как плагин Docker CLI
+          DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker}
+          mkdir -p $DOCKER_CONFIG/cli-plugins
+          curl -SL https://github.com/docker/compose/releases/download/v2.31.1/docker-compose-linux-x86_64 -o $DOCKER_CONFIG/cli-plugins/docker-compose
+          chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
+          # Создаем символическую ссылку для обратной совместимости
+          sudo ln -sf $DOCKER_CONFIG/cli-plugins/docker-compose /usr/local/bin/docker-compose
+          # Проверяем установку
+          docker compose version
+          docker-compose version
 
-      - name: Check Docker Compose version
-        run: docker-compose version || docker compose version
-      
       - name: Build application image
-        run: docker-compose build
+        run: docker compose build
       
       - name: Start database service
-        run: docker-compose up -d db
+        run: docker compose up -d db
         
       - name: Wait for database to be ready
         run: |
           echo "Waiting for database to be ready..."
           timeout=60
           while [ $timeout -gt 0 ]; do
-            if docker-compose exec -T db pg_isready -U postgres; then
+            if docker compose exec -T db pg_isready -U postgres; then
               echo "Database is ready!"
               break
             fi
@@ -49,7 +59,7 @@ jobs:
           fi
       
       - name: Run unit tests inside Docker
-        run: docker-compose run --rm test pytest tests/ -v --disable-warnings
+        run: docker compose run --rm test pytest tests/ -v --disable-warnings
       
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -112,6 +122,18 @@ jobs:
       
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        
+      - name: Install Docker Compose
+        run: |
+          # Устанавливаем docker-compose v2 как плагин Docker CLI
+          DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker}
+          mkdir -p $DOCKER_CONFIG/cli-plugins
+          curl -SL https://github.com/docker/compose/releases/download/v2.23.3/docker-compose-linux-x86_64 -o $DOCKER_CONFIG/cli-plugins/docker-compose
+          chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
+          # Создаем символическую ссылку для обратной совместимости
+          sudo ln -sf $DOCKER_CONFIG/cli-plugins/docker-compose /usr/local/bin/docker-compose
+          # Проверяем установку
+          docker compose version
       
       - name: Login to Docker Hub
         uses: docker/login-action@v3
