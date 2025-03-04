@@ -24,7 +24,7 @@ jobs:
       - name: Install Docker Compose
         uses: ndeloof/install-compose-action@v0.0.1
         with:
-          version: v2.31.1
+          version: v2.33.1
           legacy: true
 
       - name: Build application image
