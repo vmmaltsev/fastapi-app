@@ -1,0 +1,68 @@
+services:
+  app:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=fastapi_db
+      - ENVIRONMENT=development
+    depends_on:
+      - db
+    volumes:
+      - ./app:/app/app
+      - ./tests:/app/tests
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=fastapi_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  test:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=fastapi_db
+      - ENVIRONMENT=test
+    volumes:
+      - ./app:/app/app
+      - ./tests:/app/tests
+    depends_on:
+      - db
+    command: pytest tests/ -v
+    restart: "no"
+    deploy:
+      restart_policy:
+        condition: none
+    labels:
+      - "com.docker.compose.rm=true"
+
+volumes:
+  postgres_data: 
