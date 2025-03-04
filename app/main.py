@@ -16,16 +16,6 @@ models.Base.metadata.create_all(bind=engine)
 # Load environment variables
 load_dotenv()
 
-# Get database connection parameters from environment variables
-DB_USER = os.getenv("DB_USER")
-DB_PASSWORD = os.getenv("DB_PASSWORD")
-DB_HOST = os.getenv("DB_HOST", "localhost")
-DB_PORT = os.getenv("DB_PORT", "5432")
-DB_NAME = os.getenv("DB_NAME", "postgres")
-
-# Create database URL
-SQLALCHEMY_DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-
 # Create FastAPI instance
 app = FastAPI(
     title="FastAPI PostgreSQL App",

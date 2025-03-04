@@ -6,12 +6,12 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
       - DB_HOST=db
       - DB_PORT=5432
-      - DB_NAME=fastapi_db
-      - ENVIRONMENT=development
+      - DB_NAME=${DB_NAME:-fastapi_db}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
     depends_on:
       - db
     volumes:
@@ -29,9 +29,9 @@ services:
     ports:
       - "5432:5432"
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=fastapi_db
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME:-fastapi_db}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -45,11 +45,11 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
       - DB_HOST=db
       - DB_PORT=5432
-      - DB_NAME=fastapi_db
+      - DB_NAME=${DB_NAME:-fastapi_db}
       - ENVIRONMENT=test
     volumes:
       - ./app:/app/app
