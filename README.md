@@ -1,26 +1,27 @@
 # FastAPI PostgreSQL Application
 
-Simple FastAPI application with PostgreSQL connection for managing records.
+Simple FastAPI application with PostgreSQL integration for managing records.
 
 ## Features
 
 - CRUD operations for records
 - Web interface with HTML templates
 - API endpoints for programmatic access
-- Docker and Docker Compose setup
-- Testing with pytest
+- Docker and Docker Compose support
+- Automated testing with pytest
+- CI/CD pipeline with GitHub Actions
 
 ## Setup
 
 ### Environment Variables
 
-The application uses environment variables for configuration. Create a `.env` file in the root directory based on the `.env.example` template:
+The application relies on environment variables for configuration. Create a `.env` file in the root directory based on the `.env.example` template:
 
 ```bash
 cp .env.example .env
 ```
 
-Then edit the `.env` file with your actual configuration:
+Then update the `.env` file with your actual configuration:
 
 ```
 DB_USER=your_db_user
@@ -39,7 +40,7 @@ ENVIRONMENT=development
 docker-compose up -d
 ```
 
-2. Access the application at http://localhost:8000
+2. Access the application at [http://localhost:8000](http://localhost:8000)
 
 ### Running Tests
 
@@ -71,4 +72,35 @@ docker-compose run test pytest tests/ -v
 - Never commit the `.env` file to version control
 - Use strong, unique passwords for database credentials
 - In production, consider using a secrets management solution
-- Regularly update dependencies to patch security vulnerabilities 
+- Regularly update dependencies to patch security vulnerabilities
+
+## CI/CD Pipeline
+
+The project is configured with GitHub Actions for continuous integration and delivery:
+
+- **Automatic build**: Triggered on each push or pull request to the `main` or `master` branch
+- **Testing**: Runs all automated tests
+- **Security scanning**: Uses Bandit for code security checks and Safety for dependency vulnerability scanning
+- **Docker image publishing**: Automatically publishes the Docker image to Docker Hub on push to `main` or `master`
+
+### CI/CD Setup
+
+To enable the CI/CD pipeline, configure the following secrets in GitHub:
+
+1. `DOCKERHUB_USERNAME` - Your Docker Hub username
+2. `DOCKERHUB_TOKEN` - Your Docker Hub access token
+
+For detailed setup instructions, refer to [.github/README.md](.github/README.md).
+
+### Docker Hub
+
+The application images are published on Docker Hub:
+[maltsevvm/fastapi-app](https://hub.docker.com/r/maltsevvm/fastapi-app)
+
+To run the latest version:
+
+```bash
+docker pull maltsevvm/fastapi-app:latest
+docker run -p 8000:8000 maltsevvm/fastapi-app:latest
+```
+
